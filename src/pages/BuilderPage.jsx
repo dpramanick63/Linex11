@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Layout/Navbar';
 import { downloadLineupPDF } from '../utils/pdfGenerator';
 import { motion, AnimatePresence } from 'framer-motion';
-// ADDED: Settings to imports
-import { Shirt, ChevronDown, Wand2, Save, Share2, FileDown, Lock, RotateCcw, X, Plus, Trash2, Hexagon, Crosshair, Zap, Copy, RefreshCw, Check, Loader2, LayoutGrid, ScanEye, Shield, Users, LogIn, Settings, Activity } from 'lucide-react';
+import { Shirt, ChevronDown, Wand2, Save, Share2, FileDown, Lock, RotateCcw, X, Plus, Trash2, Hexagon, Crosshair, Zap, Copy, RefreshCw, Check, Loader2, LayoutGrid, ScanEye, Shield, Users, LogIn, Settings, Activity, Move } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -20,7 +19,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { FORMATIONS } from '../lib/builderFormations';
 import FormationSelector from '../components/UI/FormationSelector';
 import SaveLoader from '../components/UI/SaveLoader';
-// ADDED: Import SquadSettingsModal and JerseyIcon
 import SquadSettingsModal, { JerseyIcon } from '../components/UI/SquadSettingsModal';
 
 // --- NEW INITIAL LOADER COMPONENT ---
@@ -260,8 +258,7 @@ const TacticalLoader = () => (
 );
 
 // --- 1. ROSTER PLAYER ---
-// CHANGED: Added jerseyConfig prop
-const DraggablePlayer = ({ player, onUpdate, onDelete, isOverlay = false, disabled = false, jerseyConfig }) => {
+const DraggablePlayer = ({ player, onUpdate, onDelete, isOverlay = false, disabled = false, jerseyConfig, onClick, isSelected }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: player.id,
     data: { player, origin: 'roster' },
@@ -278,7 +275,6 @@ const DraggablePlayer = ({ player, onUpdate, onDelete, isOverlay = false, disabl
     return (
       <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-900/90 border-2 border-pitch rounded-lg flex flex-col items-center justify-center shadow-2xl scale-105 pointer-events-none z-[999]">
         <span className="text-pitch font-teko text-lg md:text-xl font-bold leading-none">{player.number}</span>
-        {/* CHANGED: Replaced Shirt with JerseyIcon */}
         <JerseyIcon styleId={jerseyConfig?.style} color={jerseyConfig?.color} className="w-4 h-4 md:w-6 md:h-6" />
         <span className="text-[6px] md:text-[8px] text-white font-bold uppercase truncate max-w-full px-1">{player.name}</span>
       </div>
@@ -291,8 +287,13 @@ const DraggablePlayer = ({ player, onUpdate, onDelete, isOverlay = false, disabl
       style={style} 
       {...listeners} 
       {...attributes} 
-      className={`relative group w-full aspect-square border border-white/20 rounded-lg flex flex-col items-center justify-between p-0.5 md:p-1 transition-all bg-slate-900/40
-      ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-pitch hover:bg-white/5 cursor-grab active:cursor-grabbing'}`}
+      onClick={(e) => {
+        if (onClick) onClick(player);
+      }}
+      className={`relative group w-full aspect-square border rounded-lg flex flex-col items-center justify-between p-0.5 md:p-1 transition-all bg-slate-900/40
+      ${disabled ? 'opacity-50 cursor-not-allowed border-white/20' : 'cursor-grab active:cursor-grabbing'}
+      ${isSelected ? 'border-pitch bg-pitch/20 shadow-[0_0_10px_rgba(34,197,94,0.5)] ring-1 ring-pitch' : 'border-white/20 hover:border-pitch hover:bg-white/5'}
+      `}
     >
        <input 
          className="w-full text-center bg-transparent text-pitch font-teko text-sm md:text-lg font-bold outline-none p-0 focus:text-white pointer-events-auto"
@@ -301,8 +302,9 @@ const DraggablePlayer = ({ player, onUpdate, onDelete, isOverlay = false, disabl
          readOnly={disabled}
          onPointerDown={(e) => e.stopPropagation()} 
        />
-       {/* CHANGED: Replaced Shirt with JerseyIcon */}
+       
        <JerseyIcon styleId={jerseyConfig?.style} color={jerseyConfig?.color} className="w-3.5 h-3.5 md:w-5 md:h-5 drop-shadow-sm transition-transform group-hover:scale-110" />
+       
        <input 
          className="w-full bg-transparent text-center text-slate-400 group-hover:text-white font-sans text-[7px] md:text-[9px] font-semibold outline-none truncate focus:bg-black/40 rounded px-1 pointer-events-auto"
          value={player.name}
@@ -323,8 +325,7 @@ const DraggablePlayer = ({ player, onUpdate, onDelete, isOverlay = false, disabl
 };
 
 // --- 2. PITCH PLAYER ---
-// CHANGED: Added jerseyConfig prop
-const PitchPlayer = ({ player, x, y, onRemove, isTactical, isOverlay = false, jerseyConfig }) => {
+const PitchPlayer = ({ player, x, y, onRemove, isTactical, isOverlay = false, jerseyConfig, onClick, isSelected }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: player.id,
     data: { player, origin: 'pitch', currentX: x, currentY: y }
@@ -344,7 +345,6 @@ const PitchPlayer = ({ player, x, y, onRemove, isTactical, isOverlay = false, je
   if(isOverlay) {
       return (
         <div className="flex flex-col items-center cursor-grabbing z-[999] pointer-events-none transform -translate-x-1/2 -translate-y-1/2" style={{opacity: 1}}>
-            {/* CHANGED: Replaced Shirt with JerseyIcon */}
             <JerseyIcon styleId={jerseyConfig?.style} color={jerseyConfig?.color} className="w-10 h-10 md:w-16 md:h-16 drop-shadow-2xl" />
             <div className="bg-black/90 px-2 py-0.5 rounded text-[10px] text-white font-bold mt-[-5px] border border-white/20 whitespace-nowrap shadow-xl">
                 {player.name}
@@ -359,11 +359,17 @@ const PitchPlayer = ({ player, x, y, onRemove, isTactical, isOverlay = false, je
         style={style} 
         {...listeners} 
         {...attributes}
-        onClick={() => !isTactical && setShowMenu(!showMenu)}
+        onClick={(e) => {
+            if (onClick) {
+                onClick(player);
+            } else if (!isTactical) {
+                setShowMenu(!showMenu);
+            }
+        }}
         className={`flex flex-col items-center group -translate-x-1/2 -translate-y-1/2 
-        ${isTactical ? 'cursor-move' : 'cursor-grab active:cursor-grabbing'}`}
+        ${isTactical ? 'cursor-move' : 'cursor-grab active:cursor-grabbing'}
+        ${isSelected ? 'brightness-125 scale-110 drop-shadow-[0_0_10px_#22c55e]' : ''}`}
     >
-        {/* CHANGED: Replaced Shirt with JerseyIcon and kept mobile size w-5 h-5 */}
         <JerseyIcon 
             styleId={jerseyConfig?.style} 
             color={jerseyConfig?.color} 
@@ -374,11 +380,12 @@ const PitchPlayer = ({ player, x, y, onRemove, isTactical, isOverlay = false, je
             <div className="absolute -top-1 -right-1 bg-pitch text-slate-900 text-[6px] md:text-[8px] font-bold px-0.5 md:px-1 rounded-sm border border-slate-900 min-w-[10px] md:min-w-[14px] text-center">{player.number}</div>
         )}
         
-        <div className="bg-black/70 backdrop-blur-sm px-1 py-px rounded text-[6px] md:text-[10px] text-white font-bold mt-[-2px] z-10 w-[45px] md:w-[80px] text-center truncate border border-white/20">
+        <div className={`bg-black/70 backdrop-blur-sm px-1 py-px rounded text-[6px] md:text-[10px] text-white font-bold mt-[-2px] z-10 w-[45px] md:w-[80px] text-center truncate border border-white/20 
+        ${isSelected ? 'border-pitch text-pitch' : ''}`}>
             {player.name}
         </div>
 
-        {showMenu && !isTactical && (
+        {showMenu && !isTactical && !isSelected && (
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex gap-1 bg-slate-900 border border-white/20 rounded-md p-1 z-50">
                 <button onPointerDown={(e) => { e.stopPropagation(); onRemove(player.id); }} className="p-0.5 hover:bg-red-500/20 text-red-400 rounded">
                     <Trash2 className="w-3 h-3" />
@@ -390,7 +397,7 @@ const PitchPlayer = ({ player, x, y, onRemove, isTactical, isOverlay = false, je
 };
 
 // --- 3. DROPPABLE SLOT ---
-const DroppableSlot = ({ id, x, y, occupied }) => {
+const DroppableSlot = ({ id, x, y, occupied, onClick, highlight }) => {
   const { setNodeRef, isOver } = useDroppable({ id: id });
    
   if (occupied) return null; 
@@ -398,13 +405,18 @@ const DroppableSlot = ({ id, x, y, occupied }) => {
   return (
     <div 
       ref={setNodeRef}
-      className={`absolute w-8 h-8 md:w-14 md:h-14 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all 
-      ${isOver ? 'scale-125 drop-shadow-[0_0_15px_rgba(34,197,94,1)]' : ''}`}
+      onClick={() => onClick && onClick(id)}
+      className={`absolute w-8 h-8 md:w-14 md:h-14 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all cursor-pointer
+      ${isOver ? 'scale-125 drop-shadow-[0_0_15px_rgba(34,197,94,1)]' : ''}
+      ${highlight ? 'scale-110' : ''}`}
       style={{ left: `${x}%`, top: `${y}%` }}
     >
-        <div className="flex flex-col items-center opacity-40 hover:opacity-100">
-           <div className="w-5 h-5 md:w-8 md:h-8 rounded-full border border-dashed border-white/50 flex items-center justify-center bg-black/20">
-              <span className="text-[6px] md:text-[7px] font-bold text-white/80 uppercase">{id.replace(/[0-9]/g, '')}</span>
+        <div className={`flex flex-col items-center transition-opacity duration-300 ${highlight ? 'opacity-100' : 'opacity-40 hover:opacity-100'}`}>
+           <div className={`w-5 h-5 md:w-8 md:h-8 rounded-full border border-dashed flex items-center justify-center transition-colors
+               ${highlight ? 'border-pitch bg-pitch/20 shadow-[0_0_10px_#22c55e] animate-pulse' : 'border-white/50 bg-black/20'}`}>
+              <span className={`text-[6px] md:text-[7px] font-bold uppercase ${highlight ? 'text-pitch' : 'text-white/80'}`}>
+                {highlight ? <Plus className="w-3 h-3 md:w-4 md:h-4"/> : id.replace(/[0-9]/g, '')}
+              </span>
            </div>
         </div>
     </div>
@@ -486,7 +498,7 @@ const BuilderPage = () => {
   const [isTacticalMode, setIsTacticalMode] = useState(false);
   const [loadingTactical, setLoadingTactical] = useState(false);
   const [tacticalPositions, setTacticalPositions] = useState({});
-  const [activeTab, setActiveTab] = useState('HUB'); // New State for Tabs
+  const [activeTab, setActiveTab] = useState('HUB'); 
    
   const [activeId, setActiveId] = useState(null);
   const [showFormationSelector, setShowFormationSelector] = useState(false);
@@ -500,6 +512,9 @@ const BuilderPage = () => {
    
   const [currentLineupId, setCurrentLineupId] = useState(() => loadState('currentLineupId', null));
   const [shareCode, setShareCode] = useState(() => loadState('shareCode', null));
+
+  // --- SELECTED PLAYER STATE FOR TAP-TO-PLACE ---
+  const [selectedPlayerId, setSelectedPlayerId] = useState(null);
 
   // --- SIMULATE INITIAL LOAD ---
   useEffect(() => {
@@ -518,7 +533,7 @@ const BuilderPage = () => {
     localStorage.setItem('teamName', JSON.stringify(teamName));
     localStorage.setItem('currentLineupId', JSON.stringify(currentLineupId));
     localStorage.setItem('shareCode', JSON.stringify(shareCode));
-    localStorage.setItem('jerseyConfig', JSON.stringify(jerseyConfig)); // Add jerseyConfig
+    localStorage.setItem('jerseyConfig', JSON.stringify(jerseyConfig)); 
   }, [teamSize, formationName, roster, placedPlayers, teamName, currentLineupId, shareCode, jerseyConfig]);
 
   useEffect(() => {
@@ -669,6 +684,7 @@ const BuilderPage = () => {
   const deletePlayer = (id) => {
     setRoster(prev => prev.filter(p => p.id !== id));
     removeFromPitch(id);
+    if (selectedPlayerId === id) setSelectedPlayerId(null);
   };
 
   const removeFromPitch = (id) => {
@@ -681,8 +697,65 @@ const BuilderPage = () => {
     setTacticalPositions(prev => { const newPos = { ...prev }; delete newPos[id]; return newPos; });
   };
 
+  // --- TAP-TO-PLACE LOGIC ---
+
+  // Handle clicking a player (Roster or Pitch)
+  const handlePlayerClick = (player) => {
+      if (selectedPlayerId === player.id) {
+          // Deselect if already selected
+          setSelectedPlayerId(null);
+      } else if (selectedPlayerId) {
+          // If another player is selected and we click this one, consider it a Swap/Replace
+          const targetSlotEntry = Object.entries(placedPlayers).find(([_, p]) => p.id === player.id);
+          if (targetSlotEntry) {
+              const targetSlotId = targetSlotEntry[0];
+              const selectedPlayer = roster.find(p => p.id === selectedPlayerId) || Object.values(placedPlayers).find(p => p.id === selectedPlayerId);
+              if (selectedPlayer) {
+                  movePlayerToSlot(selectedPlayer, targetSlotId);
+                  setSelectedPlayerId(null);
+              }
+          } else {
+              setSelectedPlayerId(player.id);
+          }
+      } else {
+          setSelectedPlayerId(player.id);
+      }
+  };
+
+  const handleSlotClick = (slotId) => {
+      if (selectedPlayerId) {
+          const player = roster.find(p => p.id === selectedPlayerId) || Object.values(placedPlayers).find(p => p.id === selectedPlayerId);
+          if (player) {
+              movePlayerToSlot(player, slotId);
+              setSelectedPlayerId(null);
+          }
+      }
+  };
+
+  const movePlayerToSlot = (player, targetSlotId) => {
+      setPlacedPlayers(prev => {
+          const newPlaced = { ...prev };
+          const sourceSlot = Object.keys(newPlaced).find(k => newPlaced[k].id === player.id);
+          if (sourceSlot) delete newPlaced[sourceSlot]; 
+          
+          const targetPlayer = newPlaced[targetSlotId];
+
+          if (targetPlayer) {
+              if (sourceSlot) { 
+                  newPlaced[sourceSlot] = targetPlayer; 
+                  newPlaced[targetSlotId] = player; 
+              } else { 
+                  newPlaced[targetSlotId] = player; 
+              }
+          } else {
+              newPlaced[targetSlotId] = player;
+          }
+          return newPlaced;
+      });
+  };
+
   const handleDragStart = (event) => setActiveId(event.active.id);
-  
+   
   const handleDragEnd = (event) => {
     const { active, over } = event;
     setActiveId(null);
@@ -703,7 +776,6 @@ const BuilderPage = () => {
     }
 
     if (!over) return;
-    const origin = active.data.current.origin;
     const dropId = over.id;
 
     if (dropId === 'roster-zone') { removeFromPitch(player.id); return; }
@@ -715,20 +787,7 @@ const BuilderPage = () => {
     const isValidSlot = formationPositions.some(pos => pos.id === targetSlotId);
     if (!isValidSlot) return; 
 
-    setPlacedPlayers(prev => {
-       const newPlaced = { ...prev };
-       const sourceSlot = Object.keys(newPlaced).find(k => newPlaced[k].id === player.id);
-       if (sourceSlot) delete newPlaced[sourceSlot]; 
-       const targetPlayer = newPlaced[targetSlotId];
-
-       if (targetPlayer) {
-           if (origin === 'pitch' && sourceSlot) { newPlaced[sourceSlot] = targetPlayer; newPlaced[targetSlotId] = player; } 
-           else { newPlaced[targetSlotId] = player; }
-       } else {
-           newPlaced[targetSlotId] = player;
-       }
-       return newPlaced;
-    });
+    movePlayerToSlot(player, targetSlotId);
   };
 
   const handleAutoBuild = () => {
@@ -751,9 +810,16 @@ const BuilderPage = () => {
       setFormationName(Object.keys(FORMATIONS[newSize.id])[0]);
       setCurrentLineupId(null);
       setShareCode(null);
+      setSelectedPlayerId(null);
   };
 
   const visibleRoster = roster.filter(p => !Object.values(placedPlayers).some(placed => placed.id === p.id));
+
+  const getSelectedPlayerName = () => {
+      if(!selectedPlayerId) return '';
+      const p = roster.find(x => x.id === selectedPlayerId) || Object.values(placedPlayers).find(x => x.id === selectedPlayerId);
+      return p ? p.name : '';
+  };
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -865,7 +931,7 @@ const BuilderPage = () => {
                                 {savedLineups.filter(l => l.team_size === teamSize.id).length === 0 && <div className="text-center py-4 text-xs text-slate-600">No saves yet</div>}
                                 <div className="border-t border-white/5 mt-1 pt-1">
                                     <button onClick={() => { setCurrentLineupId(null); setTeamName('New Squad'); setRoster(Array.from({ length: 25 }, (_, i) => ({ id: `p${i+1}`, name: `Player ${i+1}`, number: i+1 }))); setPlacedPlayers({}); setShowSaveDropdown(false); }} className="w-full py-2 bg-pitch/10 hover:bg-pitch/20 text-pitch text-xs font-bold uppercase rounded-lg flex items-center justify-center gap-1">
-                                        <Plus className="w-3 h-3" /> New Slot
+                                            <Plus className="w-3 h-3" /> New Slot
                                     </button>
                                 </div>
                             </motion.div>
@@ -912,6 +978,25 @@ const BuilderPage = () => {
              {/* PITCH */}
              <div className="h-[42vh] lg:h-full lg:flex-1 relative order-1 lg:order-2 bg-gradient-to-b from-slate-900/50 to-transparent">
                 <div className="w-full h-full relative overflow-hidden flex items-center justify-center perspective-[1200px]">
+                    
+                    {/* ADDED: Visual Notification Banner for Tap-to-Place */}
+                    <AnimatePresence>
+                        {selectedPlayerId && (
+                            <motion.div 
+                                initial={{ y: -50, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -50, opacity: 0 }}
+                                className="absolute top-1 md:top-4 z-50 bg-slate-900/60 md:bg-slate-900/90 backdrop-blur-sm border border-pitch/50 md:border-pitch text-white px-2 py-1 md:px-4 md:py-2 rounded-full shadow-lg flex items-center gap-1 md:gap-2"
+                            >
+                                <Move className="w-3 h-3 md:w-4 md:h-4 text-pitch animate-pulse" />
+                                <span className="text-[9px] md:text-xs font-bold uppercase whitespace-nowrap">
+                                    Tap to place <span className="text-pitch">{getSelectedPlayerName()}</span>
+                                </span>
+                                <button onClick={() => setSelectedPlayerId(null)} className="ml-1 md:ml-2 hover:bg-white/10 rounded-full p-0.5 md:p-1"><X className="w-3 h-3"/></button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <div id="pitch-container" ref={builderPitchRef} className="relative w-[85%] h-[85%] md:w-[85%] md:h-[85%] bg-pitch-dark border-4 border-white/20 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] transform rotate-x-[15deg] origin-center" style={{ backgroundImage: `linear-gradient(0deg, transparent 24%, rgba(255,255,255,.1) 25%, rgba(255,255,255,.1) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.1) 75%, rgba(255,255,255,.1) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,.1) 25%, rgba(255,255,255,.1) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.1) 75%, rgba(255,255,255,.1) 76%, transparent 77%, transparent)`, backgroundSize: '50px 50px' }}>
                         <div className="absolute top-0 left-[20%] right-[20%] h-[15%] border-b-2 border-x-2 border-white/20"></div>
                         <div className="absolute bottom-0 left-[20%] right-[20%] h-[15%] border-t-2 border-x-2 border-white/20"></div>
@@ -919,11 +1004,11 @@ const BuilderPage = () => {
                         {formationPositions.map(pos => {
                            const player = placedPlayers[pos.id];
                            if(player) return null; 
-                           return <DroppableSlot key={pos.id} id={pos.id} x={pos.x} y={pos.y} occupied={false} />;
+                           return <DroppableSlot key={pos.id} id={pos.id} x={pos.x} y={pos.y} occupied={false} onClick={handleSlotClick} highlight={!!selectedPlayerId} />;
                         })}
                         {Object.entries(placedPlayers).map(([slotId, player]) => {
                            const pos = formationPositions.find(p => p.id === slotId);
-                           return pos ? <PitchPlayer key={player.id} player={player} x={pos.x} y={pos.y} onRemove={removeFromPitch} isTactical={false} jerseyConfig={jerseyConfig} /> : null;
+                           return pos ? <PitchPlayer key={player.id} player={player} x={pos.x} y={pos.y} onRemove={removeFromPitch} isTactical={false} jerseyConfig={jerseyConfig} onClick={handlePlayerClick} isSelected={selectedPlayerId === player.id} /> : null;
                         })}
                     </div>
                 </div>
@@ -935,7 +1020,6 @@ const BuilderPage = () => {
                    <div className="flex justify-between items-center">
                      <div className="flex items-center gap-2">
                         <span className="text-white font-teko text-lg uppercase tracking-wide">Squad List</span>
-                        {/* CHANGED: Added Settings Button */}
                         <button 
                             onClick={() => setShowSettings(true)} 
                             className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-pitch transition-colors"
@@ -949,13 +1033,21 @@ const BuilderPage = () => {
                 </div>
 
                 <RosterDroppableArea>
-                   {/* ADDED ID HERE */}
                    <div id="roster-container" className="flex-1 overflow-y-auto p-2 custom-scrollbar">
                       <DroppableSlot id="roster-zone" x={-100} y={-100} occupied={true} />
                       {/* grid-cols-5 for mobile */}
                       <div className="grid grid-cols-5 lg:grid-cols-4 gap-1 md:gap-2">
                          {visibleRoster.map((player) => (
-                            <DraggablePlayer key={player.id} player={player} onUpdate={updatePlayer} onDelete={deletePlayer} disabled={false} jerseyConfig={jerseyConfig} />
+                            <DraggablePlayer 
+                                key={player.id} 
+                                player={player} 
+                                onUpdate={updatePlayer} 
+                                onDelete={deletePlayer} 
+                                disabled={false} 
+                                jerseyConfig={jerseyConfig}
+                                onClick={handlePlayerClick}
+                                isSelected={selectedPlayerId === player.id}
+                            />
                          ))}
                          {roster.length < 50 && (
                             <button onClick={() => { const newId = roster.length + 1; const nextNum = roster.length > 0 ? Math.max(...roster.map(p => parseInt(p.number) || 0)) + 1 : 1; setRoster([...roster, { id: `p${Date.now()}`, name: `Player ${newId}`, number: nextNum }]); }} className="w-full aspect-square border border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center text-slate-500 hover:text-white hover:border-pitch/50 transition-all bg-slate-800/20">
@@ -1006,7 +1098,6 @@ const BuilderPage = () => {
              ) : null}
           </DragOverlay>
 
-          {/* CHANGED: Added Settings Modal */}
           <SquadSettingsModal 
             isOpen={showSettings} 
             onClose={() => setShowSettings(false)} 

@@ -28,12 +28,12 @@ const LoginRequiredModal = ({ onClose, onLogin }) => (
 const MiniPitchPreview = ({ formation, teamSize = 11 }) => {
   const positions = FORMATIONS[teamSize]?.[formation] || [];
   return (
-    <div className="w-full h-32 md:h-44 bg-[#020617] relative overflow-hidden group-hover:bg-[#0f172a] transition-colors duration-500">
+    <div className="w-full h-40 md:h-56 bg-[#020617] relative overflow-hidden group-hover:bg-[#0f172a] transition-colors duration-500">
       <div className="absolute inset-0 opacity-30 bg-[linear-gradient(0deg,transparent_24%,rgba(255,255,255,.1)_25%,rgba(255,255,255,.1)_26%,transparent_27%,transparent_74%,rgba(255,255,255,.1)_75%,rgba(255,255,255,.1)_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,rgba(255,255,255,.1)_25%,rgba(255,255,255,.1)_26%,transparent_27%,transparent_74%,rgba(255,255,255,.1)_75%,rgba(255,255,255,.1)_76%,transparent_77%,transparent)] bg-[length:20px_20px]"></div>
       <div className="absolute top-1/2 w-full h-[1px] bg-white/5"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-white/5 rounded-full"></div>
       {positions.map((pos, i) => (
-        <div key={i} className="absolute w-1.5 h-1.5 md:w-2 md:h-2 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.6)] transform -translate-x-1/2 -translate-y-1/2" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />
+        <div key={i} className="absolute w-2 h-2 md:w-2.5 md:h-2.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.6)] transform -translate-x-1/2 -translate-y-1/2" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />
       ))}
     </div>
   );
@@ -208,8 +208,7 @@ const CommunityPage = () => {
     <div className="min-h-screen bg-transparent text-white font-sans pb-24 selection:bg-pitch selection:text-black">
       <Navbar />
 
-      {/* --- NAV TABS (Normal Flow + Centered + Below Navbar) --- */}
-      {/* Added pt-24 to push it down below the fixed Navbar and removed 'fixed' */}
+      {/* --- NAV TABS --- */}
       <div className="pt-24 pb-4 w-full z-30 flex justify-center relative pointer-events-none">
         <div className="pointer-events-auto bg-[#0f172a]/70 backdrop-blur-xl border border-white/10 rounded-full px-1.5 py-1.5 flex items-center gap-1 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transform scale-90 md:scale-100 ring-1 ring-white/5 mx-4 max-w-full overflow-hidden">
             {TABS.map(tab => {
@@ -246,7 +245,7 @@ const CommunityPage = () => {
         </AnimatePresence>
       </div>
 
-      {/* --- MAIN CONTENT (Padding removed since tabs are in flow) --- */}
+      {/* --- MAIN CONTENT --- */}
       <div className="px-4 max-w-5xl mx-auto mt-4">
         {activeTab === 'feed' && (
             <div className="animate-fade-in space-y-8">
@@ -323,20 +322,20 @@ const CommunityPage = () => {
             </motion.div>
         )}
 
-        {/* --- CENTRALIZED VIEWER MODAL (NO COMMENTS) --- */}
+        {/* --- CENTRALIZED VIEWER MODAL (ENLARGED PITCH) --- */}
         {selectedLineup && (
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4">
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-xl p-2 md:p-4">
                 
-                {/* Main Card Container - Centered */}
-                <div className="w-full max-w-4xl bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative flex flex-col">
+                {/* Main Card Container */}
+                <div className="w-full max-w-5xl bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative flex flex-col max-h-[95vh]">
                     
-                    {/* Visualizer Area */}
-                    <div className="w-full bg-slate-950/50 relative flex items-center justify-center p-6 md:p-10">
-                        <div className="relative aspect-[1.6/1] w-full max-w-2xl bg-slate-900/80 border border-white/5 shadow-2xl overflow-hidden rounded-xl">
+                    {/* Visualizer Area - Enlarged */}
+                    <div className="w-full bg-slate-950/50 relative flex items-center justify-center p-4 md:p-8 overflow-y-auto">
+                        <div className="relative aspect-[3/4] md:aspect-[4/3] w-full max-w-3xl bg-slate-900/80 border border-white/5 shadow-2xl overflow-hidden rounded-xl min-h-[60vh] md:min-h-0">
                             {/* Pitch Graphics */}
                             <div className="absolute inset-0 opacity-20 bg-[linear-gradient(0deg,transparent_24%,rgba(255,255,255,.3)_25%,rgba(255,255,255,.3)_26%,transparent_27%,transparent_74%,rgba(255,255,255,.3)_75%,rgba(255,255,255,.3)_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,rgba(255,255,255,.3)_25%,rgba(255,255,255,.3)_26%,transparent_27%,transparent_74%,rgba(255,255,255,.3)_75%,rgba(255,255,255,.3)_76%,transparent_77%,transparent)] bg-[length:40px_40px]"></div>
-                            <div className="absolute top-0 left-[20%] right-[20%] h-[15%] border-b border-x border-white/20"></div>
-                            <div className="absolute bottom-0 left-[20%] right-[20%] h-[15%] border-t border-x border-white/20"></div>
+                            <div className="absolute top-0 left-[15%] right-[15%] h-[15%] border-b border-x border-white/20"></div>
+                            <div className="absolute bottom-0 left-[15%] right-[15%] h-[15%] border-t border-x border-white/20"></div>
                             <div className="absolute top-1/2 w-full h-[1px] bg-white/20"></div>
 
                             {/* Players */}
@@ -346,11 +345,13 @@ const CommunityPage = () => {
                                 const tPos = selectedLineup.tactical_data?.[player.id];
                                 return (
                                     <div key={pos.id} className="absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2" style={{ left: `${tPos?.x ?? pos.x}%`, top: `${tPos?.y ?? pos.y}%` }}>
-                                        <div className="relative transform scale-[0.7] md:scale-125 origin-center transition-transform hover:scale-[0.9] md:hover:scale-150 cursor-pointer">
-                                            <img src={JERSEY_IMG} className="w-6 h-6 md:w-8 md:h-8 drop-shadow-lg" alt="kit" />
-                                            <div className="absolute -top-1 -right-1 bg-white text-black text-[8px] font-bold px-0.5 rounded shadow-sm">{player.number}</div>
+                                        <div className="relative transform scale-[0.85] md:scale-125 origin-center transition-transform hover:scale-[1.1] md:hover:scale-150 cursor-pointer">
+                                            <img src={JERSEY_IMG} className="w-8 h-8 md:w-10 md:h-10 drop-shadow-lg" alt="kit" />
+                                            <div className="absolute -top-1 -right-1 bg-white text-black text-[9px] font-bold px-1 rounded shadow-sm border border-black/10">{player.number}</div>
                                         </div>
-                                        <div className="bg-black/60 backdrop-blur-sm text-[6px] md:text-[9px] text-white px-1.5 rounded border border-white/10 font-bold truncate max-w-[50px] md:max-w-[70px] text-center mt-1">{player.name}</div>
+                                        <div className="bg-black/80 backdrop-blur-md text-[8px] md:text-[10px] text-white px-2 py-0.5 rounded border border-white/20 font-bold truncate max-w-[65px] md:max-w-[100px] text-center mt-1.5 shadow-lg uppercase tracking-tight">
+                                          {player.name}
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -372,18 +373,18 @@ const CommunityPage = () => {
                          </div>
 
                          <div className="flex items-center gap-3">
-                             {selectedLineup.caption && <div className="hidden md:block text-[10px] text-slate-400 mr-4 max-w-xs truncate border-l border-white/10 pl-4">{selectedLineup.caption}</div>}
+                             {selectedLineup.caption && <div className="hidden lg:block text-[10px] text-slate-400 mr-4 max-w-xs truncate border-l border-white/10 pl-4 italic">"{selectedLineup.caption}"</div>}
                              <button onClick={() => handleLike(selectedLineup.id)} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full transition-colors group">
-                                <Heart className={`w-4 h-4 transition-all ${likedPosts.has(selectedLineup.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-400 group-hover:text-white'}`} />
+                                <Heart className={`w-4 h-4 transition-all ${likedPosts.has(selectedLineup.id) ? 'fill-rose-500 text-rose-500 scale-110' : 'text-slate-400 group-hover:text-white'}`} />
                                 <span className={`text-xs font-bold ${likedPosts.has(selectedLineup.id) ? 'text-rose-500' : 'text-slate-400 group-hover:text-white'}`}>{selectedLineup.likes?.count || 0}</span>
                              </button>
                          </div>
                     </div>
 
-                    {/* Close Button - Moved to end of container for proper z-indexing */}
+                    {/* Close Button */}
                     <button 
                         onClick={(e) => { e.stopPropagation(); setSelectedLineup(null); }} 
-                        className="absolute top-4 right-4 z-[90] bg-black/60 hover:bg-white/20 p-2 rounded-full text-white transition-all border border-white/10 shadow-lg"
+                        className="absolute top-4 right-4 z-[90] bg-black/60 hover:bg-rose-500 p-2 rounded-full text-white transition-all border border-white/10 shadow-lg"
                     >
                         <X className="w-5 h-5"/>
                     </button>

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   Menu, X, LogOut, Star, Settings, 
-  ShieldHalved, ClipboardList, Users, Home, ChevronRight, User as UserIcon
+  Shield, ClipboardList, Users, Home, ChevronRight, User as UserIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -60,8 +60,8 @@ const Navbar = () => {
 
   // Enhanced Links with Icons
   const NAV_LINKS = [
-    { name: 'Home', path: '/', icon: <Home className="w-5 h-5" /> }, // Added Home for mobile context
-    { name: 'Squad Builder', path: '/builder', icon: <ShieldHalved className="w-5 h-5" /> },
+    { name: 'Home', path: '/', icon: <Home className="w-5 h-5" /> }, 
+    { name: 'Squad Builder', path: '/builder', icon: <Shield className="w-5 h-5" /> }, // Fixed Icon
     { name: 'Tactics Info', path: '/tactics', icon: <ClipboardList className="w-5 h-5" /> },
     { name: 'Community', path: '/community', icon: <Users className="w-5 h-5" /> },
   ];

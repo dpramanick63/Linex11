@@ -330,15 +330,14 @@ const PitchPlayer = ({ player, x, y, onRemove, isTactical, isOverlay = false, je
     id: player.id,
     data: { player, origin: 'pitch', currentX: x, currentY: y }
   });
-  const [showMenu, setShowMenu] = useState(false);
-
+  
   const style = {
     transform: CSS.Translate.toString(transform),
     left: `${x}%`, 
     top: `${y}%`,
     position: 'absolute',
     opacity: isDragging ? 0.5 : 1, 
-    zIndex: 10,
+    zIndex: isDragging || isSelected ? 50 : 10, 
     touchAction: 'none'
   };
 
@@ -362,8 +361,6 @@ const PitchPlayer = ({ player, x, y, onRemove, isTactical, isOverlay = false, je
         onClick={(e) => {
             if (onClick) {
                 onClick(player);
-            } else if (!isTactical) {
-                setShowMenu(!showMenu);
             }
         }}
         className={`flex flex-col items-center group -translate-x-1/2 -translate-y-1/2 
@@ -385,10 +382,17 @@ const PitchPlayer = ({ player, x, y, onRemove, isTactical, isOverlay = false, je
             {player.name}
         </div>
 
-        {showMenu && !isTactical && !isSelected && (
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex gap-1 bg-slate-900 border border-white/20 rounded-md p-1 z-50">
-                <button onPointerDown={(e) => { e.stopPropagation(); onRemove(player.id); }} className="p-0.5 hover:bg-red-500/20 text-red-400 rounded">
-                    <Trash2 className="w-3 h-3" />
+        {/* Delete Button on Selection */}
+        {!isTactical && isSelected && (
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 flex gap-1 bg-slate-900 border border-pitch/50 rounded-sm p-0.5 z-50 shadow-xl animate-in fade-in zoom-in duration-200">
+                <button 
+                    onPointerDown={(e) => { 
+                        e.stopPropagation(); 
+                        onRemove(player.id); 
+                    }} 
+                    className="p-0.5 hover:bg-red-500/20 bg-red-500/10 text-red-400 rounded-sm transition-colors flex items-center justify-center"
+                >
+                    <Trash2 className="w-2.5 h-2.5" />
                 </button>
             </div>
         )}
@@ -515,6 +519,9 @@ const BuilderPage = () => {
 
   // --- SELECTED PLAYER STATE FOR TAP-TO-PLACE ---
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
+  
+  // --- CLEAR CONFIRMATION DIALOG STATE ---
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // --- SIMULATE INITIAL LOAD ---
   useEffect(() => {
@@ -800,6 +807,19 @@ const BuilderPage = () => {
     });
     setPlacedPlayers(newPlaced);
   };
+  
+  // --- NEW: CLEAR LINEUP FUNCTION ---
+  const handleClearLineup = () => {
+    if (Object.keys(placedPlayers).length === 0) return;
+    setShowClearConfirm(true);
+  };
+
+  const confirmClear = () => {
+    setPlacedPlayers({});
+    setTacticalPositions({});
+    setSelectedPlayerId(null);
+    setShowClearConfirm(false);
+  };
 
   const handleTeamSizeChange = (newSizeId) => {
       const newSize = TEAM_SIZES.find(ts => ts.id === newSizeId);
@@ -888,6 +908,37 @@ const BuilderPage = () => {
         )}
       </AnimatePresence>
 
+      {/* --- ADDED: CLEAR CONFIRMATION MODAL --- */}
+      <AnimatePresence>
+        {showClearConfirm && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+                initial={{scale:0.9, opacity:0}} 
+                animate={{scale:1, opacity:1}} 
+                exit={{scale:0.9, opacity:0}} 
+                className="bg-slate-900 border border-red-500/50 rounded-xl p-4 w-full max-w-xs text-center shadow-[0_0_30px_rgba(239,68,68,0.2)]"
+            >
+               <h3 className="text-white font-bold text-lg mb-2 font-teko tracking-wide uppercase">Clear Lineup?</h3>
+               <p className="text-slate-400 text-xs mb-4 leading-relaxed">All players will be removed from the pitch and returned to the squad list.</p>
+               <div className="flex gap-2 justify-center">
+                  <button 
+                    onClick={() => setShowClearConfirm(false)} 
+                    className="flex-1 py-2 rounded bg-slate-800 text-slate-300 text-xs font-bold uppercase hover:bg-slate-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={confirmClear} 
+                    className="flex-1 py-2 rounded bg-red-600 text-white text-xs font-bold uppercase hover:bg-red-500 shadow-lg transition-colors"
+                  >
+                    Confirm
+                  </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* --- VISUAL FORMATION SELECTOR --- */}
       <VisualFormationSelector 
         isOpen={showFormationSelector} 
@@ -905,11 +956,12 @@ const BuilderPage = () => {
                  
                  {/* Name Group */}
                  <div className="relative flex items-center gap-1">
+                     {/* CHANGED: Smaller text size for mobile (text-base) */}
                      <input 
                        type="text"
                        value={teamName}
                        onChange={(e) => setTeamName(e.target.value)}
-                       className="bg-transparent text-center text-white text-lg md:text-2xl font-bold uppercase italic font-teko outline-none focus:border-b border-pitch/50 transition-all placeholder:text-white/20 max-w-[150px] md:max-w-[300px]"
+                       className="bg-transparent text-center text-white text-base md:text-2xl font-bold uppercase italic font-teko outline-none focus:border-b border-pitch/50 transition-all placeholder:text-white/20 max-w-[150px] md:max-w-[300px]"
                        placeholder="TEAM NAME"
                      />
                      <button onClick={() => { if(!user) setShowLoginModal(true); else setShowSaveDropdown(!showSaveDropdown) }} className="p-1 text-slate-400 hover:text-white">
@@ -958,17 +1010,28 @@ const BuilderPage = () => {
                  </AnimatePresence>
              </div>
              
-             <div className="flex flex-wrap justify-center gap-1.5 md:gap-2 px-2">
-                <select className="bg-slate-800 text-white border border-white/20 rounded px-1.5 py-0.5 md:px-2 md:py-1 text-[9px] md:text-xs font-bold uppercase hover:border-pitch cursor-pointer" value={teamSize.id} onChange={(e) => handleTeamSizeChange(e.target.value)}>
+             {/* CHANGED: Made buttons smaller on mobile (text-[8px] and px-1) */}
+             <div className="flex flex-wrap justify-center gap-1 md:gap-2 px-2">
+                <select className="bg-slate-800 text-white border border-white/20 rounded px-1 py-0.5 md:px-2 md:py-1 text-[8px] md:text-xs font-bold uppercase hover:border-pitch cursor-pointer" value={teamSize.id} onChange={(e) => handleTeamSizeChange(e.target.value)}>
                    {TEAM_SIZES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
-                <button onClick={() => setShowFormationSelector(true)} className="bg-slate-800 text-white border border-white/20 rounded px-1.5 py-0.5 md:px-2 md:py-1 text-[9px] md:text-xs font-bold uppercase hover:border-pitch flex items-center gap-1">
+                <button onClick={() => setShowFormationSelector(true)} className="bg-slate-800 text-white border border-white/20 rounded px-1 py-0.5 md:px-2 md:py-1 text-[8px] md:text-xs font-bold uppercase hover:border-pitch flex items-center gap-1">
                    {formationName} <ChevronDown className="w-3 h-3"/>
                 </button>
-                <button onClick={handleAutoBuild} className="bg-pitch/10 text-pitch border border-pitch/30 rounded px-1.5 py-0.5 md:px-2 md:py-1 text-[9px] md:text-xs font-bold uppercase hover:bg-pitch/20 flex items-center gap-1">
+                <button onClick={handleAutoBuild} className="bg-pitch/10 text-pitch border border-pitch/30 rounded px-1 py-0.5 md:px-2 md:py-1 text-[8px] md:text-xs font-bold uppercase hover:bg-pitch/20 flex items-center gap-1">
                    <Wand2 className="w-3 h-3"/> Auto
                 </button>
-                <button onClick={handleTacticalModeToggle} className="flex items-center gap-1 px-2 py-0.5 md:px-3 md:py-1 rounded text-[9px] md:text-xs font-bold uppercase bg-transparent text-slate-400 border border-slate-600 hover:text-white hover:border-pitch transition-all">
+                
+                {/* Clear Lineup Button */}
+                <button 
+                  onClick={handleClearLineup} 
+                  className="bg-slate-800 text-slate-300 border border-slate-600 rounded px-1 py-0.5 md:px-2 md:py-1 text-[8px] md:text-xs font-bold uppercase hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 flex items-center gap-1 transition-all"
+                  title="Clear Lineup"
+                >
+                   <RotateCcw className="w-3 h-3"/> <span className="hidden md:inline">Clear</span>
+                </button>
+
+                <button onClick={handleTacticalModeToggle} className="flex items-center gap-1 px-1 py-0.5 md:px-3 md:py-1 rounded text-[8px] md:text-xs font-bold uppercase bg-transparent text-slate-400 border border-slate-600 hover:text-white hover:border-pitch transition-all">
                    <Lock className="w-3 h-3"/> Tactical Board
                 </button>
              </div>
@@ -979,7 +1042,7 @@ const BuilderPage = () => {
              <div className="h-[42vh] lg:h-full lg:flex-1 relative order-1 lg:order-2 bg-gradient-to-b from-slate-900/50 to-transparent">
                 <div className="w-full h-full relative overflow-hidden flex items-center justify-center perspective-[1200px]">
                     
-                    {/* ADDED: Visual Notification Banner for Tap-to-Place */}
+                    {/* Visual Notification Banner for Tap-to-Place */}
                     <AnimatePresence>
                         {selectedPlayerId && (
                             <motion.div 

@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle, KeyRound, Key, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle, Key, Eye, EyeOff, KeyRound } from 'lucide-react';
 import Navbar from '../components/Layout/Navbar';
 
-const Auth = () => {
+const AuthPage = () => {
   const navigate = useNavigate();
   
   // View States: 'login' | 'signup' | 'verify_otp' | 'forgot_password'
@@ -28,27 +28,26 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true); setError(null); setMessage(null);
 
-    // --- NEW: Check Username Uniqueness First ---
-    // We check the public profiles table to see if this username is already claimed
-    const { data: existingUser, error: checkError } = await supabase
+    // Check Username Uniqueness First
+    const { data: existingUser } = await supabase
       .from('profiles')
       .select('username')
       .eq('username', username)
       .single();
 
-    // If a user is found, STOP immediately
     if (existingUser) {
       setError("Username already taken. Please choose another.");
       setLoading(false);
       return; 
     }
-    // ---------------------------------------------
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { 
-        data: { username }
+        data: { username },
+        // FIX: Use window.location.origin instead of localhost
+        emailRedirectTo: `${window.location.origin}/builder`
       }
     });
 
@@ -56,11 +55,10 @@ const Auth = () => {
         if (error.message.includes("already registered")) {
             setError("This email is already in the squad. Try logging in!");
         } else {
-            setError(error.message); // If 500 happens, it shows here
+            setError(error.message);
         }
         setLoading(false);
     } else {
-        // If successful, Supabase sends an email. We move to the OTP screen.
         setMessage("Verification code sent! Check your email.");
         setView('verify_otp');
         setLoading(false);
@@ -72,7 +70,7 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true); setError(null);
 
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
         type: 'signup'
@@ -111,11 +109,12 @@ const Auth = () => {
     setLoading(true); setError(null); setMessage(null);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:5173/update-password',
+      // FIX: Use window.location.origin instead of localhost
+      redirectTo: `${window.location.origin}/update-password`,
     });
 
     if (error) {
-        setError(error.message); // This will show the 500 error text if SMTP fails
+        setError(error.message);
         setLoading(false);
     } else {
         setMessage("Reset link sent! Check your email (and spam).");
@@ -127,7 +126,10 @@ const Auth = () => {
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: 'http://localhost:5173/builder' }
+      options: { 
+        // FIX: This was hardcoded to localhost. Now it works everywhere.
+        redirectTo: `${window.location.origin}/builder` 
+      }
     });
     if (error) setError(error.message);
   };
@@ -138,7 +140,7 @@ const Auth = () => {
       setError(null);
       setMessage(null);
       setOtp(''); 
-      setShowPassword(false); // Reset password visibility on view change
+      setShowPassword(false);
   };
 
   return (
@@ -293,4 +295,4 @@ const Auth = () => {
   );
 };
 
-export default Auth;
+export default AuthPage;

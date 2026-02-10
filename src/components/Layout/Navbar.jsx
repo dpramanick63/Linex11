@@ -137,7 +137,20 @@ const Navbar = () => {
           </div>
           <div className="flex flex-col justify-center h-10">
             <h1 className="text-3xl font-teko font-bold text-white leading-none tracking-wide flex items-baseline">
-              LINEX <span className="relative shine-container bg-gradient-to-tr from-pitch to-emerald-200 bg-clip-text text-transparent drop-shadow-sm ml-0.5">1</span>
+              {/* ANIMATED LINEX TEXT */}
+              <motion.div 
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: "auto", opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2, ease: "circOut" }}
+                className="overflow-hidden flex"
+              >
+                <span className="mr-1">LINEX</span>
+              </motion.div>
+              
+              {/* NUMBER 11 */}
+              <span className="relative shine-container bg-gradient-to-tr from-pitch to-emerald-200 bg-clip-text text-transparent drop-shadow-sm">
+                11
+              </span>
             </h1>
             <div className="flex items-center gap-1.5 overflow-hidden">
                <div className="h-[1px] w-3 bg-pitch/50"></div>
@@ -188,7 +201,7 @@ const Navbar = () => {
       </div>
 
       {/* ============================================== */}
-      {/* MODERN MOBILE MENU OVERLAY         */}
+      {/* MODERN MOBILE MENU OVERLAY          */}
       {/* ============================================== */}
       <AnimatePresence>
         {isMenuOpen && (

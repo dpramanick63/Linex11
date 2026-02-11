@@ -651,7 +651,7 @@ const BuilderPage = () => {
           if (currentLineupId === lineupToDelete.id) {
               setCurrentLineupId(null);
               setShareCode(null);
-              setTeamName(teamName + " (Unsaved)"); // Visual cue
+              setTeamName(teamName + " (Unsaved)"); 
           }
       }
       setLineupToDelete(null);
@@ -1030,6 +1030,9 @@ const BuilderPage = () => {
                  
                  {/* Name Group */}
                  <div className="relative flex items-center gap-1">
+                     <button onClick={() => { if(!user) setShowLoginModal(true); else setShowSaveDropdown(!showSaveDropdown) }} className="p-1 text-slate-400 hover:text-white">
+                        <ChevronDown className="w-4 h-4" />
+                     </button>
                      {/* CHANGED: Smaller text size for mobile (text-base) */}
                      <input 
                        type="text"
@@ -1038,13 +1041,10 @@ const BuilderPage = () => {
                        className="bg-transparent text-center text-white text-base md:text-2xl font-bold uppercase italic font-teko outline-none focus:border-b border-pitch/50 transition-all placeholder:text-white/20 max-w-[150px] md:max-w-[300px]"
                        placeholder="TEAM NAME"
                      />
-                     <button onClick={() => { if(!user) setShowLoginModal(true); else setShowSaveDropdown(!showSaveDropdown) }} className="p-1 text-slate-400 hover:text-white">
-                        <ChevronDown className="w-4 h-4" />
-                     </button>
                      <AnimatePresence>
                         {showSaveDropdown && user && (
-                            // FIX: Changed right-0 to centered positioning to prevent overflow on mobile
-                            <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-10}} className="absolute top-10 -right-4 md:left-1/2 md:-translate-x-1/2 md:right-auto w-64 max-w-[90vw] bg-slate-900 border border-white/20 rounded-xl shadow-2xl p-2 z-[60]">
+                            // FIX: Centered dropdown relative to parent container
+                            <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-10}} className="absolute top-10 left-1/2 -translate-x-1/2 w-64 max-w-[90vw] bg-slate-900 border border-white/20 rounded-xl shadow-2xl p-2 z-[60]">
                                 <div className="flex justify-between items-center mb-2 px-2">
                                     <span className="text-[10px] text-slate-500 uppercase font-bold">Saved {teamSize.label} ({savedLineups.filter(l => l.team_size === teamSize.id).length}/4)</span>
                                     <button onClick={() => setShowSaveDropdown(false)}><X className="w-3 h-3 text-slate-500 hover:text-white"/></button>

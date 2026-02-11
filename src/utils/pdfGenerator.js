@@ -13,7 +13,7 @@ export const downloadLineupPDF = async (teamName, formationName) => {
 
   try {
     // ==========================================
-    // STEP 1: FIX PITCH (Rectangular, Flat & BIGGER ITEMS)
+    // STEP 1: FIX PITCH (Standard Visualization)
     // ==========================================
     const pitchClone = originalPitch.cloneNode(true);
     
@@ -33,7 +33,7 @@ export const downloadLineupPDF = async (teamName, formationName) => {
         icon.style.objectFit = "contain";
     });
 
-    // --- 1.2: MAKE PITCH NAMES LARGER & TEXT MUCH HIGHER ---
+    // --- 1.2: MAKE PITCH NAMES VISIBLE & CLEAR ---
     const pitchNames = pitchClone.querySelectorAll('.truncate');
     pitchNames.forEach(name => {
         name.classList.remove('truncate');
@@ -47,16 +47,14 @@ export const downloadLineupPDF = async (teamName, formationName) => {
         name.style.fontSize = "16px"; 
         name.style.fontWeight = "bold";
         
-        // MOVED TEXT UP (MORE)
-        // Huge bottom padding forces text to the top of the box
-        name.style.padding = "0px 8px 15px 8px"; 
+        name.style.padding = "2px 8px 12px 8px"; // Padding ensures text isn't cut
         
         name.style.borderRadius = "6px";
         name.style.zIndex = "100";
         name.style.marginTop = "5px"; 
     });
 
-    // --- 1.3: FIX JERSEY NUMBERS (PRESERVED) ---
+    // --- 1.3: FIX JERSEY NUMBERS ---
     const pitchNumbers = pitchClone.querySelectorAll('.bg-pitch.text-slate-900');
     
     pitchNumbers.forEach(inputEl => {
@@ -65,9 +63,9 @@ export const downloadLineupPDF = async (teamName, formationName) => {
         numDiv.innerText = val;
 
         numDiv.style.width = "34px";        
-        numDiv.style.height = "34px";      
+        numDiv.style.height = "34px";       
         numDiv.style.backgroundColor = "#22c55e"; 
-        numDiv.style.color = "#000000";           
+        numDiv.style.color = "#000000";            
         numDiv.style.border = "2px solid #ffffff"; 
         numDiv.style.borderRadius = "8px"; 
         
@@ -97,12 +95,12 @@ export const downloadLineupPDF = async (teamName, formationName) => {
         }
     });
 
-    // Position Off-Screen
+    // Position Pitch Off-Screen
     pitchClone.style.position = "fixed";
     pitchClone.style.left = "-10000px";
     pitchClone.style.top = "0px";
-    pitchClone.style.width = "1200px"; 
-    pitchClone.style.height = "800px"; 
+    pitchClone.style.width = "1000px"; 
+    pitchClone.style.height = "700px"; 
     document.body.appendChild(pitchClone);
 
     const pitchCanvas = await html2canvas(pitchClone, {
@@ -113,161 +111,166 @@ export const downloadLineupPDF = async (teamName, formationName) => {
     });
 
     // ==========================================
-    // STEP 2: FIX ROSTER (NAMES MOVED UP EVEN MORE)
+    // STEP 2: FIX ROSTER (2-COLUMN LIST FOR PORTRAIT)
     // ==========================================
-    const rosterClone = originalRoster.cloneNode(true);
-
-    const originalInputs = originalRoster.querySelectorAll('input');
-    const clonedInputs = rosterClone.querySelectorAll('input');
-
-    originalInputs.forEach((orig, index) => {
-        const cloneInput = clonedInputs[index];
-        if (cloneInput) {
-            const textDiv = document.createElement('div');
-            textDiv.innerText = orig.value || ""; 
-            
-            textDiv.style.textAlign = "center";
-            textDiv.style.width = "100%";
-            textDiv.style.fontFamily = "sans-serif";
-            textDiv.style.fontWeight = "bold";
-            textDiv.style.zIndex = "50";
-
-            if (orig.classList.contains('text-pitch')) {
-                // === NUMBER (Green) ===
-                textDiv.style.color = "#22c55e"; 
-                textDiv.style.fontSize = "28px"; 
-                // Huge negative margin to pull the NAME (below it) upwards
-                textDiv.style.marginBottom = "-40px"; 
-                textDiv.style.lineHeight = "1";
-            } else {
-                // === NAME (White) ===
-                textDiv.style.color = "#ffffff"; 
-                textDiv.style.fontSize = "14px"; 
-                textDiv.style.textTransform = "uppercase";
-                textDiv.style.marginTop = "0px"; 
-                // Strong Transform to force it UP
-                textDiv.style.transform = "translateY(-20px)";
-            }
-
-            cloneInput.parentNode.replaceChild(textDiv, cloneInput);
+    const rosterData = [];
+    const rosterCards = originalRoster.querySelectorAll('.group'); 
+    
+    rosterCards.forEach(card => {
+        const inputs = card.querySelectorAll('input');
+        if (inputs.length >= 2) {
+            const number = inputs[0].value || "";
+            const name = inputs[1].value || "";
+            if (name) rosterData.push({ number, name });
         }
     });
 
-    // --- 2.2: Force Roster Icons Larger ---
-    const rosterIcons = rosterClone.querySelectorAll('img, svg');
-    rosterIcons.forEach(icon => {
-        icon.style.width = "60px";  
-        icon.style.height = "60px"; 
-        icon.style.minWidth = "60px";
-        icon.style.minHeight = "60px";
+    // Roster Container
+    const rosterContainer = document.createElement('div');
+    rosterContainer.style.position = "fixed";
+    rosterContainer.style.left = "-10000px";
+    rosterContainer.style.top = "0px";
+    rosterContainer.style.width = "1000px"; 
+    rosterContainer.style.backgroundColor = "#0f172a";
+    rosterContainer.style.padding = "20px";
+    rosterContainer.style.display = "flex";
+    rosterContainer.style.flexWrap = "wrap";
+    rosterContainer.style.gap = "15px"; 
+    rosterContainer.style.alignContent = "flex-start";
+
+    // Build Items - 2 Columns looks cleaner in Portrait
+    rosterData.forEach(player => {
+        const item = document.createElement('div');
+        item.style.display = "flex";
+        item.style.alignItems = "center";
+        item.style.width = "48%"; // 2 Columns
+        item.style.padding = "12px 16px"; // Increased padding prevents clipping
+        item.style.backgroundColor = "rgba(255,255,255,0.05)";
+        item.style.border = "1px solid rgba(255,255,255,0.1)";
+        item.style.borderRadius = "8px";
+        item.style.boxSizing = "border-box"; 
+        
+        // Prevent font clipping by ensuring height
+        item.style.minHeight = "50px"; 
+
+        const numSpan = document.createElement('span');
+        numSpan.innerText = player.number;
+        numSpan.style.color = "#22c55e"; 
+        numSpan.style.fontFamily = "sans-serif";
+        numSpan.style.fontWeight = "bold";
+        numSpan.style.fontSize = "24px";
+        numSpan.style.marginRight = "15px";
+        numSpan.style.minWidth = "40px";
+        numSpan.style.textAlign = "center";
+        numSpan.style.lineHeight = "1"; 
+
+        const nameSpan = document.createElement('span');
+        nameSpan.innerText = player.name;
+        nameSpan.style.color = "#ffffff";
+        nameSpan.style.fontFamily = "sans-serif";
+        nameSpan.style.fontSize = "18px";
+        nameSpan.style.fontWeight = "600";
+        nameSpan.style.textTransform = "uppercase";
+        nameSpan.style.whiteSpace = "nowrap"; 
+        nameSpan.style.lineHeight = "1.4"; // Higher line height fixes "cut" letters (g, y, j)
+
+        item.appendChild(numSpan);
+        item.appendChild(nameSpan);
+        rosterContainer.appendChild(item);
     });
 
-    // Reset Container Styles
-    rosterClone.style.position = "fixed";
-    rosterClone.style.left = "-10000px";
-    rosterClone.style.top = "0px";
-    rosterClone.style.width = "450px"; 
-    rosterClone.style.height = "auto"; 
-    rosterClone.style.overflow = "visible"; 
-    rosterClone.style.backgroundColor = "#0f172a"; 
-    rosterClone.style.padding = "20px"; 
-    rosterClone.style.border = "none";
-
-    const gridDiv = rosterClone.querySelector('.grid');
-    if (gridDiv) {
-        gridDiv.className = ''; 
-        gridDiv.style.display = "grid";
-        gridDiv.style.gridTemplateColumns = "1fr 1fr"; 
-        gridDiv.style.gap = "20px"; 
+    if (rosterData.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.innerText = "No Substitutes";
+        emptyMsg.style.color = "#64748b";
+        emptyMsg.style.padding = "20px";
+        emptyMsg.style.fontSize = "18px";
+        rosterContainer.appendChild(emptyMsg);
     }
 
-    const playerCards = rosterClone.querySelectorAll('div[draggable]'); 
-    playerCards.forEach(card => {
-        card.style.border = "1px solid rgba(255,255,255,0.1)";
-        card.style.borderRadius = "12px";
-        card.style.padding = "15px"; 
-        card.style.background = "rgba(0,0,0,0.3)";
-        card.style.display = "flex";
-        card.style.flexDirection = "column";
-        card.style.alignItems = "center";
-        card.style.justifyContent = "center"; 
-        card.style.minHeight = "140px"; 
-    });
+    document.body.appendChild(rosterContainer);
 
-    const buttons = rosterClone.querySelectorAll('button');
-    buttons.forEach(btn => btn.style.display = 'none');
-
-    document.body.appendChild(rosterClone);
-
-    const rosterCanvas = await html2canvas(rosterClone, {
+    const rosterCanvas = await html2canvas(rosterContainer, {
       scale: 2,
       useCORS: true,
-      backgroundColor: '#0f172a',
-      windowHeight: rosterClone.scrollHeight + 100
+      backgroundColor: '#0f172a'
     });
 
     document.body.removeChild(pitchClone);
-    document.body.removeChild(rosterClone);
+    document.body.removeChild(rosterContainer);
 
     // ==========================================
-    // STEP 3: GENERATE LANDSCAPE PDF
+    // STEP 3: GENERATE PORTRAIT PDF (A4 - 9:16-ish Ratio)
     // ==========================================
-    const pdf = new jsPDF('l', 'mm', 'a4'); 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+    // 'p' stands for Portrait
+    const pdf = new jsPDF('p', 'mm', 'a4'); 
+    const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+    const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
     // Background
     pdf.setFillColor(15, 23, 42); 
     pdf.rect(0, 0, pageWidth, pageHeight, 'F');
 
     // Header
-    pdf.setFontSize(22);
+    pdf.setFontSize(24);
     pdf.setTextColor(34, 197, 94); 
     pdf.setFont("helvetica", "bold");
-    pdf.text(teamName.toUpperCase(), 15, 15);
+    pdf.text(teamName.toUpperCase(), pageWidth / 2, 15, { align: 'center' });
     
     pdf.setFontSize(12);
     pdf.setTextColor(150);
-    pdf.text(`${formationName} Formation`, 15, 22);
+    pdf.text(`${formationName} Formation`, pageWidth / 2, 22, { align: 'center' });
 
-    // --- Pitch Placement ---
-    const margin = 15;
-    const headerHeight = 25;
-    const contentHeight = pageHeight - headerHeight - margin;
+    // --- Pitch Placement (Top Half) ---
+    const margin = 10;
+    const headerHeight = 30;
     
     const pitchImg = pitchCanvas.toDataURL('image/png');
     const pitchRatio = pitchCanvas.width / pitchCanvas.height;
     
-    let pitchW = (pageWidth - (margin * 3)) * 0.65; 
+    // Fit pitch to width (minus margins)
+    let pitchW = pageWidth - (margin * 2);
     let pitchH = pitchW / pitchRatio;
 
-    if (pitchH > contentHeight) {
-        pitchH = contentHeight;
-        pitchW = pitchH * pitchRatio;
-    }
+    // Center the pitch
+    const pitchX = margin;
+    const pitchY = headerHeight;
 
-    pdf.addImage(pitchImg, 'PNG', margin, headerHeight, pitchW, pitchH);
+    pdf.addImage(pitchImg, 'PNG', pitchX, pitchY, pitchW, pitchH);
 
-    // --- Roster Placement ---
+    // --- Roster Placement (Bottom Half) ---
     const rosterImg = rosterCanvas.toDataURL('image/png');
     const rosterRatio = rosterCanvas.width / rosterCanvas.height;
     
-    const rosterX = margin + pitchW + 10;
-    const rosterW = (pageWidth - margin) - rosterX;
-    const rosterH = rosterW / rosterRatio;
-
+    // Section Title
+    const subY = pitchY + pitchH + 10; // Gap below pitch
     pdf.setFillColor(34, 197, 94);
-    pdf.rect(rosterX, headerHeight, rosterW, 8, 'F');
+    pdf.rect(margin, subY, pageWidth - (margin*2), 0.5, 'F'); // Divider Line
+    
     pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(11);
-    pdf.text("SUBSTITUSIONS", rosterX + (rosterW/2), headerHeight + 5.5, { align: 'center' });
+    pdf.setFontSize(14);
+    pdf.text("SUBSTITUTES", margin, subY - 3);
 
-    pdf.addImage(rosterImg, 'PNG', rosterX, headerHeight + 10, rosterW, rosterH);
+    // Roster Image
+    const availableHeight = pageHeight - subY - 15; // Bottom margin
+    let rosterW = pageWidth - (margin * 2);
+    let rosterH = rosterW / rosterRatio;
+
+    // Check if list is too long for one page, if so, scale it
+    if (rosterH > availableHeight) {
+        rosterH = availableHeight;
+        rosterW = rosterH * rosterRatio;
+    }
+
+    // Center Roster
+    const rosterX = (pageWidth - rosterW) / 2;
+
+    pdf.addImage(rosterImg, 'PNG', rosterX, subY + 5, rosterW, rosterH);
 
     // Footer
     pdf.setFontSize(8);
     pdf.setTextColor(100);
-    pdf.text("Generated by Linex11", 15, pageHeight - 5, { align: 'left' });
+    pdf.text("Generated by Linex11", 10, pageHeight - 5, { align: 'left' });
 
     pdf.save(`${teamName}_Lineup.pdf`);
 

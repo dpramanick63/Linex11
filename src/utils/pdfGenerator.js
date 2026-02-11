@@ -163,6 +163,11 @@ export const downloadLineupPDF = async (teamName, formationName) => {
         numSpan.style.minWidth = "40px";
         numSpan.style.textAlign = "center";
         numSpan.style.lineHeight = "1"; 
+        
+        // --- FIX: MOVE NUMBERS UP ALSO ---
+        numSpan.style.position = "relative";
+        numSpan.style.top = "-12px"; // Increased from -6px
+        // ---------------------------------
 
         const nameSpan = document.createElement('span');
         nameSpan.innerText = player.name;
@@ -173,6 +178,11 @@ export const downloadLineupPDF = async (teamName, formationName) => {
         nameSpan.style.textTransform = "uppercase";
         nameSpan.style.whiteSpace = "nowrap"; 
         nameSpan.style.lineHeight = "1.4"; // Higher line height fixes "cut" letters (g, y, j)
+        
+        // --- FIX: MOVE NAMES UP ---
+        nameSpan.style.position = "relative"; 
+        nameSpan.style.top = "-12px";  // Increased from -6px        
+        // --------------------------
 
         item.appendChild(numSpan);
         item.appendChild(nameSpan);

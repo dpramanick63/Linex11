@@ -651,7 +651,7 @@ const BuilderPage = () => {
           if (currentLineupId === lineupToDelete.id) {
               setCurrentLineupId(null);
               setShareCode(null);
-              setTeamName(teamName + " (Unsaved)"); 
+              setTeamName(teamName + " (Unsaved)"); // Visual cue
           }
       }
       setLineupToDelete(null);
@@ -1044,7 +1044,7 @@ const BuilderPage = () => {
                      <AnimatePresence>
                         {showSaveDropdown && user && (
                             // FIX: Changed right-0 to centered positioning to prevent overflow on mobile
-                            <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-10}} className="absolute top-10 left-1/2 -translate-x-1/2 w-64 max-w-[90vw] bg-slate-900 border border-white/20 rounded-xl shadow-2xl p-2 z-[60]">
+                            <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-10}} className="absolute top-10 -right-4 md:left-1/2 md:-translate-x-1/2 md:right-auto w-64 max-w-[90vw] bg-slate-900 border border-white/20 rounded-xl shadow-2xl p-2 z-[60]">
                                 <div className="flex justify-between items-center mb-2 px-2">
                                     <span className="text-[10px] text-slate-500 uppercase font-bold">Saved {teamSize.label} ({savedLineups.filter(l => l.team_size === teamSize.id).length}/4)</span>
                                     <button onClick={() => setShowSaveDropdown(false)}><X className="w-3 h-3 text-slate-500 hover:text-white"/></button>

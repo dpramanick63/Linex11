@@ -556,7 +556,8 @@ const BuilderPage = () => {
   }, []);
 
   const fetchSavedLineups = async (userId) => {
-      const { data } = await supabase.from('lineups').select('id, title, formation, team_size').eq('user_id', userId).order('updated_at', { ascending: false });
+      // UPDATED: Select * to get full lineup data (placed_players, tactical_data) for restore logic
+      const { data } = await supabase.from('lineups').select('*').eq('user_id', userId).order('updated_at', { ascending: false });
       if(data) setSavedLineups(data);
   }
 
@@ -628,14 +629,16 @@ const BuilderPage = () => {
       if(data) {
           const size = TEAM_SIZES.find(t => t.id === data.team_size) || TEAM_SIZES[0];
           setTeamSize(size);
+          // FIX: Strictly load saved state exactly as it is in DB
           setFormationName(data.formation);
           setRoster(data.squad_data);
-          setPlacedPlayers(data.placed_players);
-          setTacticalPositions(data.tactical_data);
+          setPlacedPlayers(data.placed_players); // Direct restoration
+          setTacticalPositions(data.tactical_data || {});
           setTeamName(data.title);
           setCurrentLineupId(data.id);
           setShareCode(data.share_code); 
           setShowSaveDropdown(false);
+          setSelectedPlayerId(null);
       }
   };
 
@@ -1003,19 +1006,58 @@ const BuilderPage = () => {
         teamSizeId={teamSize.id}
         currentFormation={formationName}
         onSelect={(fmt) => { 
-            // 1. Update formation
+            // 1. CHECK: Restore saved lineup if reverting to saved formation
+            const activeSavedLineup = savedLineups.find(l => l.id === currentLineupId);
+            if (activeSavedLineup && activeSavedLineup.formation === fmt) {
+                 setFormationName(fmt);
+                 setTacticalPositions(activeSavedLineup.tactical_data || {});
+                 
+                 // Restore placement precisely using current player objects
+                 // (We match IDs to ensure we don't use stale player data like old names)
+                 const restoredPlaced = {};
+                 const savedPlacement = activeSavedLineup.placed_players || {};
+                 const allPlayers = [...roster, ...Object.values(placedPlayers)];
+                 
+                 Object.entries(savedPlacement).forEach(([slotId, savedPlayer]) => {
+                     const currentPlayer = allPlayers.find(p => p.id === savedPlayer.id);
+                     if (currentPlayer) {
+                         restoredPlaced[slotId] = currentPlayer;
+                     }
+                 });
+                 
+                 setPlacedPlayers(restoredPlaced);
+                 return;
+            }
+
+            // 2. Standard Logic (Formation Change with GK Fix)
             setFormationName(fmt); 
-            // 2. Reset tactical adjustments
             setTacticalPositions({}); 
             
-            // 3. FIX: Redistribute players sequentially to new slots so they don't disappear
+            // FIX: Lock Goalkeeper and redistribute others
             const currentPlayers = Object.values(placedPlayers);
+            if (currentPlayers.length === 0) return;
+
             const newFormationSlots = FORMATIONS[teamSize.id][fmt] || [];
             const newPlaced = {};
             
-            currentPlayers.forEach((player, index) => {
-                if (index < newFormationSlots.length) {
-                    newPlaced[newFormationSlots[index].id] = player;
+            // Identify Goalkeeper Slot in new formation (usually has 'gk' or is first)
+            const newGkSlot = newFormationSlots.find(slot => slot.id.toLowerCase().includes('gk')) || newFormationSlots[0];
+            
+            // Find current GK or default to first player
+            const currentGkEntry = Object.entries(placedPlayers).find(([key]) => key.toLowerCase().includes('gk'));
+            const currentGk = currentGkEntry ? currentGkEntry[1] : currentPlayers[0];
+
+            // Separate GK from Field Players
+            const fieldPlayers = currentPlayers.filter(p => p.id !== currentGk.id);
+            const fieldSlots = newFormationSlots.filter(s => s.id !== newGkSlot.id);
+
+            // Assign GK to GK Slot
+            if (newGkSlot) newPlaced[newGkSlot.id] = currentGk;
+
+            // Redistribute the rest
+            fieldPlayers.forEach((player, index) => {
+                if (index < fieldSlots.length) {
+                    newPlaced[fieldSlots[index].id] = player;
                 }
             });
             setPlacedPlayers(newPlaced);
@@ -1056,7 +1098,7 @@ const BuilderPage = () => {
                                             {l.id === currentLineupId && <Check className="w-3 h-3 text-pitch"/>}
                                         </button>
                                         <button 
-                                            onClick={(e) => { e.stopPropagation(); setLineupToDelete(l); }}
+                                            onClick={(e) => { e.stopPropagation(); setLineupToDelete(l); }} 
                                             className="p-2 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-500 transition-colors"
                                             title="Delete Lineup"
                                         >
@@ -1130,9 +1172,9 @@ const BuilderPage = () => {
                     <AnimatePresence>
                         {selectedPlayerId && (
                             <motion.div 
-                                initial={{ y: -50, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: -50, opacity: 0 }}
+                                initial={{ y: -50, opacity: 0 }} 
+                                animate={{ y: 0, opacity: 1 }} 
+                                exit={{ y: -50, opacity: 0 }} 
                                 className="absolute top-1 md:top-4 z-50 bg-slate-900/60 md:bg-slate-900/90 backdrop-blur-sm border border-pitch/50 md:border-pitch text-white px-2 py-1 md:px-4 md:py-2 rounded-full shadow-lg flex items-center gap-1 md:gap-2"
                             >
                                 <Move className="w-3 h-3 md:w-4 md:h-4 text-pitch animate-pulse" />

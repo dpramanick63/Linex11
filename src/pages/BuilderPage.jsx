@@ -523,6 +523,9 @@ const BuilderPage = () => {
   // --- CLEAR CONFIRMATION DIALOG STATE ---
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
+  // --- NEW: DELETE LINEUP STATE ---
+  const [lineupToDelete, setLineupToDelete] = useState(null);
+
   // --- SIMULATE INITIAL LOAD ---
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -634,6 +637,24 @@ const BuilderPage = () => {
           setShareCode(data.share_code); 
           setShowSaveDropdown(false);
       }
+  };
+
+  // --- DELETE HANDLER ---
+  const confirmDeleteLineup = async () => {
+      if (!lineupToDelete) return;
+      
+      const { error } = await supabase.from('lineups').delete().eq('id', lineupToDelete.id);
+      
+      if (!error) {
+          setSavedLineups(prev => prev.filter(l => l.id !== lineupToDelete.id));
+          
+          if (currentLineupId === lineupToDelete.id) {
+              setCurrentLineupId(null);
+              setShareCode(null);
+              setTeamName(teamName + " (Unsaved)"); 
+          }
+      }
+      setLineupToDelete(null);
   };
 
   const handleGenerateCode = async () => {
@@ -828,7 +849,10 @@ const BuilderPage = () => {
       setPlacedPlayers({});
       setTacticalPositions({});
       setFormationName(Object.keys(FORMATIONS[newSize.id])[0]);
+      
+      // FIX: Reset Lineup ID and Name when changing size to avoid confusion
       setCurrentLineupId(null);
+      setTeamName(`My ${newSize.label} Squad`); // Default name for new size
       setShareCode(null);
       setSelectedPlayerId(null);
   };
@@ -939,13 +963,63 @@ const BuilderPage = () => {
         )}
       </AnimatePresence>
 
+      {/* --- NEW: DELETE CONFIRMATION MODAL --- */}
+      <AnimatePresence>
+        {lineupToDelete && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+                initial={{scale:0.9, opacity:0}} 
+                animate={{scale:1, opacity:1}} 
+                exit={{scale:0.9, opacity:0}} 
+                className="bg-slate-900 border border-red-500/50 rounded-xl p-4 w-full max-w-xs text-center shadow-[0_0_30px_rgba(239,68,68,0.2)]"
+            >
+               <h3 className="text-white font-bold text-lg mb-2 font-teko tracking-wide uppercase">Delete Saved Lineup?</h3>
+               <p className="text-slate-400 text-xs mb-4 leading-relaxed">
+                   Are you sure you want to delete <span className="text-white font-bold">"{lineupToDelete.title}"</span>? This action cannot be undone.
+               </p>
+               <div className="flex gap-2 justify-center">
+                  <button 
+                    onClick={() => setLineupToDelete(null)} 
+                    className="flex-1 py-2 rounded bg-slate-800 text-slate-300 text-xs font-bold uppercase hover:bg-slate-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={confirmDeleteLineup} 
+                    className="flex-1 py-2 rounded bg-red-600 text-white text-xs font-bold uppercase hover:bg-red-500 shadow-lg transition-colors"
+                  >
+                    Delete
+                  </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* --- VISUAL FORMATION SELECTOR --- */}
       <VisualFormationSelector 
         isOpen={showFormationSelector} 
         onClose={() => setShowFormationSelector(false)}
         teamSizeId={teamSize.id}
         currentFormation={formationName}
-        onSelect={(fmt) => { setFormationName(fmt); setTacticalPositions({}); }}
+        onSelect={(fmt) => { 
+            // 1. Update formation
+            setFormationName(fmt); 
+            // 2. Reset tactical adjustments
+            setTacticalPositions({}); 
+            
+            // 3. FIX: Redistribute players sequentially to new slots so they don't disappear
+            const currentPlayers = Object.values(placedPlayers);
+            const newFormationSlots = FORMATIONS[teamSize.id][fmt] || [];
+            const newPlaced = {};
+            
+            currentPlayers.forEach((player, index) => {
+                if (index < newFormationSlots.length) {
+                    newPlaced[newFormationSlots[index].id] = player;
+                }
+            });
+            setPlacedPlayers(newPlaced);
+        }}
       />
 
       <div className="pt-20 md:pt-24 h-[100dvh] w-full bg-slate-900/20 backdrop-blur-sm overflow-hidden font-sans flex flex-col relative">
@@ -969,16 +1043,26 @@ const BuilderPage = () => {
                      </button>
                      <AnimatePresence>
                         {showSaveDropdown && user && (
-                            <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-10}} className="absolute top-10 right-0 w-64 bg-slate-900 border border-white/20 rounded-xl shadow-2xl p-2 z-[60]">
+                            // FIX: Changed right-0 to centered positioning to prevent overflow on mobile
+                            <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-10}} className="absolute top-10 left-1/2 -translate-x-1/2 w-64 max-w-[90vw] bg-slate-900 border border-white/20 rounded-xl shadow-2xl p-2 z-[60]">
                                 <div className="flex justify-between items-center mb-2 px-2">
                                     <span className="text-[10px] text-slate-500 uppercase font-bold">Saved {teamSize.label} ({savedLineups.filter(l => l.team_size === teamSize.id).length}/4)</span>
                                     <button onClick={() => setShowSaveDropdown(false)}><X className="w-3 h-3 text-slate-500 hover:text-white"/></button>
                                 </div>
                                 {savedLineups.filter(l => l.team_size === teamSize.id).map(l => (
-                                    <button key={l.id} onClick={() => loadLineup(l.id)} className="w-full text-left p-2 hover:bg-white/5 rounded-lg flex justify-between items-center group mb-1">
-                                        <span className="text-xs text-white font-bold truncate max-w-[120px]">{l.title}</span>
-                                        {l.id === currentLineupId && <Check className="w-3 h-3 text-pitch"/>}
-                                    </button>
+                                    <div key={l.id} className="flex items-center gap-1 group w-full mb-1">
+                                        <button onClick={() => loadLineup(l.id)} className="flex-1 text-left p-2 hover:bg-white/5 rounded-lg flex justify-between items-center">
+                                            <span className="text-xs text-white font-bold truncate max-w-[100px]">{l.title}</span>
+                                            {l.id === currentLineupId && <Check className="w-3 h-3 text-pitch"/>}
+                                        </button>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); setLineupToDelete(l); }}
+                                            className="p-2 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-500 transition-colors"
+                                            title="Delete Lineup"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </div>
                                 ))}
                                 {savedLineups.filter(l => l.team_size === teamSize.id).length === 0 && <div className="text-center py-4 text-xs text-slate-600">No saves yet</div>}
                                 <div className="border-t border-white/5 mt-1 pt-1">
